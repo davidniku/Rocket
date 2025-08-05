@@ -1,6 +1,6 @@
 const { logger } = require('@librechat/data-schemas');
-const { validateAgentModel } = require('@librechat/api');
 const { createContentAggregator } = require('@librechat/agents');
+const { validateAgentModel, getCustomEndpointConfig } = require('@librechat/api');
 const {
   Constants,
   EModelEndpoint,
@@ -13,9 +13,9 @@ const {
 } = require('~/server/controllers/agents/callbacks');
 const { initializeAgent } = require('~/server/services/Endpoints/agents/agent');
 const { getModelsConfig } = require('~/server/controllers/ModelController');
-const { getCustomEndpointConfig } = require('~/server/services/Config');
 const { loadAgentTools } = require('~/server/services/ToolService');
 const AgentClient = require('~/server/controllers/agents/client');
+const { getAppConfig } = require('~/server/services/Config');
 const { getAgent } = require('~/models/Agent');
 const { logViolation } = require('~/cache');
 
@@ -50,6 +50,7 @@ const initializeClient = async ({ req, res, endpointOption }) => {
   if (!endpointOption) {
     throw new Error('Endpoint option not provided');
   }
+  const appConfig = await getAppConfig({ role: req.user?.role });
 
   // TODO: use endpointOption to determine options/modelOptions
   /** @type {Array<UsageMetadata>} */
@@ -89,8 +90,7 @@ const initializeClient = async ({ req, res, endpointOption }) => {
   }
 
   const agentConfigs = new Map();
-  /** @type {Set<string>} */
-  const allowedProviders = new Set(req?.app?.locals?.[EModelEndpoint.agents]?.allowedProviders);
+  const allowedProviders = new Set(appConfig?.endpoints?.[EModelEndpoint.agents]?.allowedProviders);
 
   const loadTools = createToolLoader();
   /** @type {Array<MongoFile>} */
@@ -144,10 +144,13 @@ const initializeClient = async ({ req, res, endpointOption }) => {
     }
   }
 
-  let endpointConfig = req.app.locals[primaryConfig.endpoint];
+  let endpointConfig = appConfig.endpoints?.[primaryConfig.endpoint];
   if (!isAgentsEndpoint(primaryConfig.endpoint) && !endpointConfig) {
     try {
-      endpointConfig = await getCustomEndpointConfig(primaryConfig.endpoint);
+      endpointConfig = getCustomEndpointConfig({
+        endpoint: primaryConfig.endpoint,
+        appConfig,
+      });
     } catch (err) {
       logger.error(
         '[api/server/controllers/agents/client.js #titleConvo] Error getting custom endpoint config',

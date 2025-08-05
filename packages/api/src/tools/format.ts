@@ -1,5 +1,6 @@
 import { AuthType, Constants, EToolResources } from 'librechat-data-provider';
-import type { TCustomConfig, TPlugin, FunctionTool } from 'librechat-data-provider';
+import type { TPlugin, FunctionTool } from 'librechat-data-provider';
+import type { MCPManager } from '~/mcp/MCPManager';
 
 /**
  * Filters out duplicate plugins from the list of plugins.
@@ -57,11 +58,11 @@ export const checkPluginAuth = (plugin?: TPlugin): boolean => {
 export function convertMCPToolToPlugin({
   toolKey,
   toolData,
-  customConfig,
+  mcpManager,
 }: {
   toolKey: string;
   toolData: FunctionTool;
-  customConfig?: Partial<TCustomConfig> | null;
+  mcpManager?: MCPManager;
 }): TPlugin | undefined {
   if (!toolData.function || !toolKey.includes(Constants.mcp_delimiter)) {
     return;
@@ -71,7 +72,7 @@ export function convertMCPToolToPlugin({
   const parts = toolKey.split(Constants.mcp_delimiter);
   const serverName = parts[parts.length - 1];
 
-  const serverConfig = customConfig?.mcpServers?.[serverName];
+  const serverConfig = mcpManager?.getRawConfig(serverName);
 
   const plugin: TPlugin = {
     /** Tool name without server suffix */
