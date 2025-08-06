@@ -18,7 +18,7 @@ const {
 } = require('librechat-data-provider');
 const { sanitizeFilename } = require('@librechat/api');
 const { EnvVar } = require('@librechat/agents');
-const { parseText } = require('@librechat/api');
+const { parseText, processAudioFile } = require('@librechat/api');
 const {
   convertImage,
   resizeAndConvert,
@@ -34,6 +34,7 @@ const { LB_QueueAsyncCall } = require('~/server/utils/queue');
 const { getStrategyFunctions } = require('./strategies');
 const { getFileStrategy } = require('~/server/utils/getFileStrategy');
 const { determineFileType } = require('~/server/utils');
+const { STTService } = require('./Audio/STTService');
 const { logger } = require('~/config');
 
 /**
@@ -532,6 +533,10 @@ const processAgentFileUpload = async ({ req, res, metadata }) => {
     file.mimetype,
     fileConfig.ocr?.supportedMimeTypes || [],
   );
+  const shouldUseSTT = fileConfig.checkType(
+    file.mimetype,
+    fileConfig.stt?.supportedMimeTypes || [],
+  );
 
   let fileInfoMetadata;
   const entity_id = messageAttachment === true ? undefined : agent_id;
@@ -610,6 +615,12 @@ const processAgentFileUpload = async ({ req, res, metadata }) => {
     if (shouldUseTextParsing) {
       const { text, bytes } = await parseText({ req, file, file_id });
       return await createTextFile(text, bytes, file.path, file.mimetype);
+    }
+
+    if (shouldUseSTT) {
+      const sttService = await STTService.getInstance();
+      const { text, bytes } = await processAudioFile({ file, sttService });
+      return await createTextFile(text, bytes, file.path, 'text/plain');
     }
 
     throw new Error(`File type ${file.mimetype} is not supported for OCR or text parsing`);

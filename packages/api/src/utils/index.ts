@@ -10,7 +10,6 @@ export * from './llm';
 export * from './math';
 export * from './openid';
 export * from './tempChatRetention';
-export * from './textParser';
 export { default as Tokenizer } from './tokenizer';
 export * from './yaml';
 export * from './http';
