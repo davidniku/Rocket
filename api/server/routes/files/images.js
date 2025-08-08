@@ -31,7 +31,6 @@ router.post('/', async (req, res) => {
 
     let message = 'Error processing file';
 
-    // Handle specific error types
     if (
       error.message?.includes('Invalid file format') ||
       error.message?.includes('No OCR result') ||
