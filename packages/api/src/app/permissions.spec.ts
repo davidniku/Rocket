@@ -851,7 +851,9 @@ describe('updateInterfacePermissions - permissions', () => {
       },
       memory: {
         // Memory enabled with personalization
-        enable: true,
+        agent: {
+          id: 'test-agent-id',
+        },
         personalize: true,
       } as unknown as TCustomConfig['memory'],
     };
